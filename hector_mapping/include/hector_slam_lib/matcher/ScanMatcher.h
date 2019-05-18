@@ -101,6 +101,7 @@ public:
 
           int numIter = maxIterations;
 
+          // 高斯牛顿迭代
           for (int i = 0; i < numIter; ++i) {
               // std::cout << "\nest:\n" << estimate;
 
@@ -200,34 +201,41 @@ public:
 
 protected:
 
-  bool estimateTransformationLogLh(Eigen::Vector3f& estimate, ConcreteOccGridMapUtil& gridMapUtil, const DataContainer& dataPoints)
-  {
-    gridMapUtil.getCompleteHessianDerivs(estimate, dataPoints, H, dTr);
-    //std::cout << "\nH\n" << H  << "\n";
-    //std::cout << "\ndTr\n" << dTr  << "\n";
+  /**
+   * @brief 
+   * 
+   * @param estimate    当前位姿估计
+   * @param gridMapUtil 
+   * @param dataPoints 
+   * @return true 
+   * @return false 
+   */
+ bool estimateTransformationLogLh(Eigen::Vector3f& estimate, ConcreteOccGridMapUtil& gridMapUtil,
+                                  const DataContainer& dataPoints) {
+   gridMapUtil.getCompleteHessianDerivs(estimate, dataPoints, H, dTr);
+   // std::cout << "\nH\n" << H  << "\n";
+   // std::cout << "\ndTr\n" << dTr  << "\n";
 
+   // 判断Hessian矩阵是否合理
+   if ((H(0, 0) != 0.0f) && (H(1, 1) != 0.0f)) {
+     // H += Eigen::Matrix3f::Identity() * 1.0f;
+     Eigen::Vector3f searchDir(H.inverse() * dTr);
 
-    if ((H(0, 0) != 0.0f) && (H(1, 1) != 0.0f)) {
+     // std::cout << "\nsearchdir\n" << searchDir  << "\n";
 
+     if (searchDir[2] > 0.2f) {
+       searchDir[2] = 0.2f;
+       std::cout << "SearchDir angle change too large\n";
+     } else if (searchDir[2] < -0.2f) {
+       searchDir[2] = -0.2f;
+       std::cout << "SearchDir angle change too large\n";
+     }
 
-      //H += Eigen::Matrix3f::Identity() * 1.0f;
-      Eigen::Vector3f searchDir (H.inverse() * dTr);
-
-      //std::cout << "\nsearchdir\n" << searchDir  << "\n";
-
-      if (searchDir[2] > 0.2f) {
-        searchDir[2] = 0.2f;
-        std::cout << "SearchDir angle change too large\n";
-      } else if (searchDir[2] < -0.2f) {
-        searchDir[2] = -0.2f;
-        std::cout << "SearchDir angle change too large\n";
-      }
-
-      updateEstimatedPose(estimate, searchDir);
-      return true;
-    }
-    return false;
-  }
+     updateEstimatedPose(estimate, searchDir);
+     return true;
+   }
+   return false;
+ }
 
   void updateEstimatedPose(Eigen::Vector3f& estimate, const Eigen::Vector3f& change)
   {

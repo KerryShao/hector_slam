@@ -64,15 +64,16 @@ public:
   /**
    * @brief Get the Complete Hessian Derivs object
    * 
-   * @param pose 
-   * @param dataPoints 
-   * @param H 
-   * @param dTr 
+   * @param pose    当前位姿估计
+   * @param dataPoints  激光扫描数据
+   * @param H       Hessian
+   * @param dTr     b
    */
-  void getCompleteHessianDerivs(const Eigen::Vector3f& pose, const DataContainer& dataPoints, Eigen::Matrix3f& H, Eigen::Vector3f& dTr)
-  {
+  void getCompleteHessianDerivs(const Eigen::Vector3f& pose, const DataContainer& dataPoints,
+                                Eigen::Matrix3f& H, Eigen::Vector3f& dTr) {
     int size = dataPoints.getSize();
 
+    // 根据当前位姿得到变换矩阵，用来将雷达的扫描点变换到世界坐标
     Eigen::Affine2f transform(getTransformForState(pose));
 
     float sinRot = sin(pose[2]);
@@ -83,17 +84,22 @@ public:
 
     for (int i = 0; i < size; ++i) {
 
-      const Eigen::Vector2f& currPoint (dataPoints.getVecEntry(i));
+      const Eigen::Vector2f& currPoint (dataPoints.getVecEntry(i)); // 激光扫描点的局部坐标
 
       Eigen::Vector3f transformedPointData(interpMapValueWithDerivatives(transform * currPoint));
 
+      // 公式12 [1 − M(Si(ξ))]
       float funVal = 1.0f - transformedPointData[0];
 
+      // 公式12 ▽M(Si(ξ)) * [1 − M(Si(ξ))]
       dTr[0] += transformedPointData[1] * funVal;
       dTr[1] += transformedPointData[2] * funVal;
 
-      float rotDeriv = ((-sinRot * currPoint.x() - cosRot * currPoint.y()) * transformedPointData[1] + (cosRot * currPoint.x() - sinRot * currPoint.y()) * transformedPointData[2]);
+      float rotDeriv =
+          ((-sinRot * currPoint.x() - cosRot * currPoint.y()) * transformedPointData[1] +
+           (cosRot * currPoint.x() - sinRot * currPoint.y()) * transformedPointData[2]);
 
+      // 公式12 14
       dTr[2] += rotDeriv * funVal;
 
       H(0, 0) += util::sqr(transformedPointData[1]);
@@ -108,7 +114,6 @@ public:
     H(1, 0) = H(0, 1);
     H(2, 0) = H(0, 2);
     H(2, 1) = H(1, 2);
-
   }
 
   Eigen::Matrix3f getCovarianceForPose(const Eigen::Vector3f& mapPose, const DataContainer& dataPoints)
@@ -353,7 +358,6 @@ public:
     float xFacInv = (1.0f - factors[0]);
     float yFacInv = (1.0f - factors[1]);
 
-    // 双线性插值
     return Eigen::Vector3f(
       ((intensities[0] * xFacInv + intensities[1] * factors[0]) * (yFacInv)) +
       ((intensities[2] * xFacInv + intensities[3] * factors[0]) * (factors[1])),
