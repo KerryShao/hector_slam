@@ -61,6 +61,14 @@ public:
 
   inline Eigen::Vector2f getWorldCoordsPoint(const Eigen::Vector2f& mapPoint) const { return concreteGridMap->getWorldCoords(mapPoint); };
 
+  /**
+   * @brief Get the Complete Hessian Derivs object
+   * 
+   * @param pose 
+   * @param dataPoints 
+   * @param H 
+   * @param dTr 
+   */
   void getCompleteHessianDerivs(const Eigen::Vector3f& pose, const DataContainer& dataPoints, Eigen::Matrix3f& H, Eigen::Vector3f& dTr)
   {
     int size = dataPoints.getSize();
@@ -284,6 +292,12 @@ public:
 
   }
 
+  /**
+   * @brief 在地图上的进行插值，得到coords处的势场值和对应的关于位置的梯度。
+   * 
+   * @param coords 
+   * @return Eigen::Vector3f 
+   */
   Eigen::Vector3f interpMapValueWithDerivatives(const Eigen::Vector2f& coords)
   {
     //check if coords are within map limits.

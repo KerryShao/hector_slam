@@ -51,142 +51,151 @@ public:
   ~ScanMatcher()
   {}
 
-  Eigen::Vector3f matchData(const Eigen::Vector3f& beginEstimateWorld, ConcreteOccGridMapUtil& gridMapUtil, const DataContainer& dataContainer, Eigen::Matrix3f& covMatrix, int maxIterations)
+  /**
+   * @brief 
+   * 
+   * @param beginEstimateWorld 
+   * @param gridMapUtil 
+   * @param dataContainer 
+   * @param covMatrix 
+   * @param maxIterations 
+   * @return Eigen::Vector3f 
+   */
+  Eigen::Vector3f matchData(const Eigen::Vector3f &beginEstimateWorld,
+                            ConcreteOccGridMapUtil &gridMapUtil, const DataContainer &dataContainer,
+                            Eigen::Matrix3f &covMatrix, int maxIterations)
   {
-    if (drawInterface){
-      drawInterface->setScale(0.05f);
-      drawInterface->setColor(0.0f,1.0f, 0.0f);
-      drawInterface->drawArrow(beginEstimateWorld);
+      if (drawInterface) {
+          drawInterface->setScale(0.05f);
+          drawInterface->setColor(0.0f, 1.0f, 0.0f);
+          drawInterface->drawArrow(beginEstimateWorld);
 
-      Eigen::Vector3f beginEstimateMap(gridMapUtil.getMapCoordsPose(beginEstimateWorld));
+          Eigen::Vector3f beginEstimateMap(gridMapUtil.getMapCoordsPose(beginEstimateWorld));
 
-      drawScan(beginEstimateMap, gridMapUtil, dataContainer);
+          drawScan(beginEstimateMap, gridMapUtil, dataContainer);
 
-      drawInterface->setColor(1.0,0.0,0.0);
-    }
-
-    if (dataContainer.getSize() != 0) {
-
-      Eigen::Vector3f beginEstimateMap(gridMapUtil.getMapCoordsPose(beginEstimateWorld));
-
-      Eigen::Vector3f estimate(beginEstimateMap);
-
-      estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
-      //bool notConverged = estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
-
-      /*
-      const Eigen::Matrix2f& hessian (H.block<2,2>(0,0));
-
-
-      Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eig(hessian);
-
-      const Eigen::Vector2f& eigValues (eig.eigenvalues());
-
-      float cond = eigValues[1] / eigValues[0];
-      float determinant = (hessian.determinant());
-      */
-      //std::cout << "\n cond: " << cond << " det: " << determinant << "\n";
-
-
-      int numIter = maxIterations;
-
-
-      for (int i = 0; i < numIter; ++i) {
-        //std::cout << "\nest:\n" << estimate;
-
-        estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
-        //notConverged = estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
-
-        if(drawInterface){
-          float invNumIterf = 1.0f/static_cast<float> (numIter);
-          drawInterface->setColor(static_cast<float>(i)*invNumIterf,0.0f, 0.0f);
-          drawInterface->drawArrow(gridMapUtil.getWorldCoordsPose(estimate));
-          //drawInterface->drawArrow(Eigen::Vector3f(0.0f, static_cast<float>(i)*0.05, 0.0f));
-        }
-
-        if(debugInterface){
-          debugInterface->addHessianMatrix(H);
-        }
+          drawInterface->setColor(1.0, 0.0, 0.0);
       }
 
-      if (drawInterface){
-        drawInterface->setColor(0.0,0.0,1.0);
-        drawScan(estimate, gridMapUtil, dataContainer);
+      if (dataContainer.getSize() != 0) {
+
+          Eigen::Vector3f beginEstimateMap(gridMapUtil.getMapCoordsPose(beginEstimateWorld));
+
+          Eigen::Vector3f estimate(beginEstimateMap);
+
+          estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
+          // bool notConverged = estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
+
+          /*
+          const Eigen::Matrix2f& hessian (H.block<2,2>(0,0));
+
+
+          Eigen::SelfAdjointEigenSolver<Eigen::Matrix2f> eig(hessian);
+
+          const Eigen::Vector2f& eigValues (eig.eigenvalues());
+
+          float cond = eigValues[1] / eigValues[0];
+          float determinant = (hessian.determinant());
+          */
+          // std::cout << "\n cond: " << cond << " det: " << determinant << "\n";
+
+          int numIter = maxIterations;
+
+          for (int i = 0; i < numIter; ++i) {
+              // std::cout << "\nest:\n" << estimate;
+
+              estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
+              // notConverged = estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
+
+              if (drawInterface) {
+                  float invNumIterf = 1.0f / static_cast<float>(numIter);
+                  drawInterface->setColor(static_cast<float>(i) * invNumIterf, 0.0f, 0.0f);
+                  drawInterface->drawArrow(gridMapUtil.getWorldCoordsPose(estimate));
+                  // drawInterface->drawArrow(Eigen::Vector3f(0.0f, static_cast<float>(i)*0.05,
+                  // 0.0f));
+              }
+
+              if (debugInterface) {
+                  debugInterface->addHessianMatrix(H);
+              }
+          }
+
+          if (drawInterface) {
+              drawInterface->setColor(0.0, 0.0, 1.0);
+              drawScan(estimate, gridMapUtil, dataContainer);
+          }
+          /*
+          Eigen::Matrix2f testMat(Eigen::Matrix2f::Identity());
+          testMat(0,0) = 2.0f;
+
+          float angleWorldCoords = util::toRad(30.0f);
+          float sinAngle = sin(angleWorldCoords);
+          float cosAngle = cos(angleWorldCoords);
+
+          Eigen::Matrix2f rotMat;
+          rotMat << cosAngle, -sinAngle, sinAngle, cosAngle;
+          Eigen::Matrix2f covarianceRotated (rotMat * testMat * rotMat.transpose());
+
+          drawInterface->setColor(0.0,0.0,1.0,0.5);
+          drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),
+          covarianceRotated);
+          */
+
+          /*
+          Eigen::Matrix3f covMatMap (gridMapUtil.getCovarianceForPose(estimate, dataContainer));
+          std::cout << "\nestim:" << estimate;
+          std::cout << "\ncovMap\n" << covMatMap;
+          drawInterface->setColor(0.0,0.0,1.0,0.5);
+
+
+          Eigen::Matrix3f covMatWorld(gridMapUtil.getCovMatrixWorldCoords(covMatMap));
+           std::cout << "\ncovWorld\n" << covMatWorld;
+
+          drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),
+          covMatMap.block<2,2>(0,0));
+
+          drawInterface->setColor(1.0,0.0,0.0,0.5);
+          drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),
+          covMatWorld.block<2,2>(0,0));
+
+          std::cout << "\nH:\n" << H;
+
+          float determinant = H.determinant();
+          std::cout << "\nH_det: " << determinant;
+          */
+
+          /*
+          Eigen::Matrix2f covFromHessian(H.block<2,2>(0,0) * 1.0f);
+          //std::cout << "\nCovFromHess:\n" << covFromHessian;
+
+          drawInterface->setColor(0.0, 1.0, 0.0, 0.5);
+          drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),covFromHessian.inverse());
+
+          Eigen::Matrix3f covFromHessian3d(H * 1.0f);
+          //std::cout << "\nCovFromHess:\n" << covFromHessian;
+
+          drawInterface->setColor(1.0, 0.0, 0.0, 0.8);
+          drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),(covFromHessian3d.inverse()).block<2,2>(0,0));
+          */
+
+          estimate[2] = util::normalize_angle(estimate[2]);
+
+          covMatrix = Eigen::Matrix3f::Zero();
+          // covMatrix.block<2,2>(0,0) = (H.block<2,2>(0,0).inverse());
+          // covMatrix.block<2,2>(0,0) = (H.block<2,2>(0,0));
+
+          /*
+          covMatrix(0,0) = 1.0/(0.1*0.1);
+          covMatrix(1,1) = 1.0/(0.1*0.1);
+          covMatrix(2,2) = 1.0/((M_PI / 18.0f) * (M_PI / 18.0f));
+          */
+
+          covMatrix = H;
+
+          return gridMapUtil.getWorldCoordsPose(estimate);
       }
-        /*
-        Eigen::Matrix2f testMat(Eigen::Matrix2f::Identity());
-        testMat(0,0) = 2.0f;
 
-        float angleWorldCoords = util::toRad(30.0f);
-        float sinAngle = sin(angleWorldCoords);
-        float cosAngle = cos(angleWorldCoords);
-
-        Eigen::Matrix2f rotMat;
-        rotMat << cosAngle, -sinAngle, sinAngle, cosAngle;
-        Eigen::Matrix2f covarianceRotated (rotMat * testMat * rotMat.transpose());
-
-        drawInterface->setColor(0.0,0.0,1.0,0.5);
-        drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()), covarianceRotated);
-        */
-
-
-
-        /*
-        Eigen::Matrix3f covMatMap (gridMapUtil.getCovarianceForPose(estimate, dataContainer));
-        std::cout << "\nestim:" << estimate;
-        std::cout << "\ncovMap\n" << covMatMap;
-        drawInterface->setColor(0.0,0.0,1.0,0.5);
-
-
-        Eigen::Matrix3f covMatWorld(gridMapUtil.getCovMatrixWorldCoords(covMatMap));
-         std::cout << "\ncovWorld\n" << covMatWorld;
-
-        drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()), covMatMap.block<2,2>(0,0));
-
-        drawInterface->setColor(1.0,0.0,0.0,0.5);
-        drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()), covMatWorld.block<2,2>(0,0));
-
-        std::cout << "\nH:\n" << H;
-
-        float determinant = H.determinant();
-        std::cout << "\nH_det: " << determinant;
-        */
-
-        /*
-        Eigen::Matrix2f covFromHessian(H.block<2,2>(0,0) * 1.0f);
-        //std::cout << "\nCovFromHess:\n" << covFromHessian;
-
-        drawInterface->setColor(0.0, 1.0, 0.0, 0.5);
-        drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),covFromHessian.inverse());
-
-        Eigen::Matrix3f covFromHessian3d(H * 1.0f);
-        //std::cout << "\nCovFromHess:\n" << covFromHessian;
-
-        drawInterface->setColor(1.0, 0.0, 0.0, 0.8);
-        drawInterface->drawCovariance(gridMapUtil.getWorldCoordsPoint(estimate.start<2>()),(covFromHessian3d.inverse()).block<2,2>(0,0));
-        */
-
-
-      estimate[2] = util::normalize_angle(estimate[2]);
-
-      covMatrix = Eigen::Matrix3f::Zero();
-      //covMatrix.block<2,2>(0,0) = (H.block<2,2>(0,0).inverse());
-      //covMatrix.block<2,2>(0,0) = (H.block<2,2>(0,0));
-
-
-      /*
-      covMatrix(0,0) = 1.0/(0.1*0.1);
-      covMatrix(1,1) = 1.0/(0.1*0.1);
-      covMatrix(2,2) = 1.0/((M_PI / 18.0f) * (M_PI / 18.0f));
-      */
-
-
-      covMatrix = H;
-
-      return gridMapUtil.getWorldCoordsPose(estimate);
-    }
-
-    return beginEstimateWorld;
+      return beginEstimateWorld;
   }
 
 protected:
