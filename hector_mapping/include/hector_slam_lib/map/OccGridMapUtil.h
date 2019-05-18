@@ -315,8 +315,8 @@ public:
 
     int index = indMin[1] * sizeX + indMin[0];
 
-    // get grid values for the 4 grid points surrounding the current coords. Check cached data first, if not contained
-    // filter gridPoint with gaussian and store in cache.
+    // get grid values for the 4 grid points surrounding the current coords. Check cached data
+    // first, if not contained filter gridPoint with gaussian and store in cache.
     if (!cacheMethod.containsCachedData(index, intensities[0])) {
       intensities[0] = getUnfilteredGridPoint(index);
       cacheMethod.cacheData(index, intensities[0]);
@@ -329,7 +329,7 @@ public:
       cacheMethod.cacheData(index, intensities[1]);
     }
 
-    index += sizeX-1;
+    index += sizeX - 1; // index在前面已经++
 
     if (!cacheMethod.containsCachedData(index, intensities[2])) {
       intensities[2] = getUnfilteredGridPoint(index);
@@ -343,6 +343,7 @@ public:
       cacheMethod.cacheData(index, intensities[3]);
     }
 
+    // intensities是离coords最近的4个网格的坐标，用来计算插值的整数像素
     float dx1 = intensities[0] - intensities[1];
     float dx2 = intensities[2] - intensities[3];
 
@@ -352,6 +353,7 @@ public:
     float xFacInv = (1.0f - factors[0]);
     float yFacInv = (1.0f - factors[1]);
 
+    // 双线性插值
     return Eigen::Vector3f(
       ((intensities[0] * xFacInv + intensities[1] * factors[0]) * (yFacInv)) +
       ((intensities[2] * xFacInv + intensities[3] * factors[0]) * (factors[1])),
