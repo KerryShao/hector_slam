@@ -368,6 +368,7 @@ public:
 
   Eigen::Affine2f getTransformForState(const Eigen::Vector3f& transVector) const
   {
+    // 这里的*号是连接两个变换，不是矩阵乘法
     return Eigen::Translation2f(transVector[0], transVector[1]) * Eigen::Rotation2Df(transVector[2]);
   }
 
